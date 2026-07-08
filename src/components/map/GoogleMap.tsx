@@ -4,7 +4,7 @@ interface GoogleMapProps {
   locations: Array<{
     lat: number;
     lng: number;
-    name: string;
+    name?: string;
     address?: string;
   }>;
   height?: string;
@@ -18,7 +18,7 @@ export default function GoogleMap({ locations, height = '400px' }: GoogleMapProp
     const markers = locations
       .map(
         (loc) =>
-          `color:0x059669|${loc.lat},${loc.lng}(${encodeURIComponent(loc.name)})`
+          `color:0x059669|${loc.lat},${loc.lng}(${encodeURIComponent(loc.name || '')})`
       )
       .join('&markers=');
 

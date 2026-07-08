@@ -1,21 +1,16 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Star } from 'lucide-react';
-import { Link } from 'react-router-dom';
-
-const destinations = [
-  { id: 1, name: 'Railay Beach', region: 'South', type: 'Beach', image: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=800&q=80', short: 'Crystal clear waters and towering limestone cliffs paradise.', description: 'Railay Beach is a small peninsula accessible only by boat due to the high limestone cliffs cutting it off from the mainland. It offers stunning beaches, rock climbing, and a relaxed atmosphere.', bestTime: 'November to April', cost: '$50-150/day', activities: ['Rock Climbing', 'Kayaking', 'Snorkeling', 'Sunset Views'], rating: 4.8, location: { lat: 8.0062, lng: 98.8355, address: 'Krabi, Thailand' } },
-  { id: 2, name: 'Doi Inthanon', region: 'North', type: 'Mountain', image: 'https://images.unsplash.com/photo-1504214208698-ea1916a2195a?w=800&q=80', short: "Thailand's highest peak with stunning waterfalls and cool climate.", description: "Doi Inthanon is Thailand's highest mountain at 2,565 meters. It features lush forests, stunning waterfalls like Wachirathan, and the famous royal pagodas.", bestTime: 'December to February', cost: '$30-80/day', activities: ['Hiking', 'Waterfall Visits', 'Bird Watching', 'Cultural Tours'], rating: 4.7, location: { lat: 18.5865, lng: 98.4868, address: 'Chiang Mai, Thailand' } },
-  { id: 3, name: 'Phi Phi Islands', region: 'South', type: 'Island', image: 'https://images.unsplash.com/photo-1589519160732-57fc835526d7?w=800&q=80', short: 'Tropical paradise with vibrant marine life and stunning sunsets.', description: 'The Phi Phi Islands are a group of six islands known for their stunning beaches, crystal-clear water, and vibrant nightlife. Maya Bay, featured in "The Beach," is a must-visit.', bestTime: 'November to April', cost: '$60-200/day', activities: ['Snorkeling', 'Scuba Diving', 'Island Hopping', 'Beach Relaxation'], rating: 4.9, location: { lat: 7.7407, lng: 98.7784, address: 'Krabi, Thailand' } },
-  { id: 4, name: 'Erawan Falls', region: 'West', type: 'Waterfall', image: 'https://images.unsplash.com/photo-1432405972618-c6b0cbaa5a07?w=800&q=80', short: 'Seven-tiered turquoise waterfall in lush jungle setting.', description: 'Erawan National Park is home to the famous seven-tiered Erawan Waterfall, named after the three-headed elephant of Hindu mythology. Each tier offers a unique emerald pool perfect for swimming.', bestTime: 'July to October', cost: '$25-60/day', activities: ['Swimming', 'Hiking', 'Wildlife Watching', 'Photography'], rating: 4.6, location: { lat: 14.2144, lng: 99.0547, address: 'Kanchanaburi, Thailand' } },
-  { id: 5, name: 'Chiang Rai', region: 'North', type: 'Nature', image: 'https://images.unsplash.com/photo-1528183428842-22f1bd55c7ee?w=800&q=80', short: 'Cultural gem with the stunning White Temple and Golden Triangle.', description: 'Chiang Rai offers a mix of cultural experiences and natural beauty. Visit the White Temple (Wat Rong Khun), the Golden Triangle, and explore hill tribe villages.', bestTime: 'October to February', cost: '$35-90/day', activities: ['Temple Tours', 'River Cruises', 'Cultural Experiences', 'Shopping'], rating: 4.5, location: { lat: 19.9070, lng: 99.8310, address: 'Chiang Rai, Thailand' } },
-  { id: 6, name: 'Koh Tao', region: 'South', type: 'Island', image: 'https://images.unsplash.com/photo-1590523277543-a94d2e4eb00b?w=800&q=80', short: 'Diver\'s paradise with crystal clear waters and vibrant coral reefs.', description: 'Koh Tao is a small island known for its excellent diving and snorkeling opportunities. It is one of the best places in the world to get certified as a diver.', bestTime: 'January to April', cost: '$40-120/day', activities: ['Scuba Diving', 'Snorkeling', 'Kayaking', 'Sunset Views'], rating: 4.7, location: { lat: 10.0995, lng: 99.8383, address: 'Surat Thani, Thailand' } },
-];
+import { destinations } from '@/data/destinations';
+import type { Destination } from '@/data/destinations';
+import DestinationModal from '@/components/destination/DestinationModal';
 
 export default function DestinationPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [regionFilter, setRegionFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
+  const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filtered = destinations.filter((dest) => {
     const matchesSearch =
@@ -27,6 +22,16 @@ export default function DestinationPage() {
     const matchesType = typeFilter === 'All' || dest.type === typeFilter;
     return matchesSearch && matchesRegion && matchesType;
   });
+
+  const openModal = (dest: Destination) => {
+    setSelectedDestination(dest);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setTimeout(() => setSelectedDestination(null), 300);
+  };
 
   return (
     <div className="min-h-screen pt-20 lg:pt-24">
@@ -88,7 +93,10 @@ export default function DestinationPage() {
               whileHover={{ y: -6 }}
               className="group"
             >
-              <Link to={`/destinations/${dest.id}`} className="block">
+              <button
+                onClick={() => openModal(dest)}
+                className="block text-left w-full"
+              >
                 <div className="bg-white rounded-3xl overflow-hidden shadow-lg shadow-slate-100 hover:shadow-xl hover:shadow-emerald-100/50 transition-all">
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <img
@@ -116,12 +124,12 @@ export default function DestinationPage() {
                         <span className="font-semibold text-slate-dark text-sm">{dest.rating}</span>
                       </div>
                       <span className="text-emerald-600 text-sm font-medium group-hover:gap-2 transition-all">
-                        Learn more →
+                        View details →
                       </span>
                     </div>
                   </div>
                 </div>
-              </Link>
+              </button>
             </motion.div>
           ))}
         </div>
@@ -132,6 +140,12 @@ export default function DestinationPage() {
           </div>
         )}
       </section>
+
+      <DestinationModal
+        destination={selectedDestination}
+        isOpen={isModalOpen}
+        onClose={closeModal}
+      />
     </div>
   );
 }

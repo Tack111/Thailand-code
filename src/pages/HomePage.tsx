@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, ArrowRight, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { destinations } from '@/data/destinations';
+import type { Destination } from '@/data/destinations';
+import DestinationModal from '@/components/destination/DestinationModal';
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
@@ -15,42 +19,19 @@ const stagger = {
   },
 };
 
-const destinations = [
-  {
-    id: 1,
-    name: 'Railay Beach',
-    region: 'South',
-    type: 'Beach',
-    image: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=800&q=80',
-    short: 'Crystal clear waters and towering limestone cliffs',
-  },
-  {
-    id: 2,
-    name: 'Doi Inthanon',
-    region: 'North',
-    type: 'Mountain',
-    image: 'https://images.unsplash.com/photo-1504214208698-ea1916a2195a?w=800&q=80',
-    short: 'Thailand\'s highest peak with stunning waterfalls',
-  },
-  {
-    id: 3,
-    name: 'Phi Phi Islands',
-    region: 'South',
-    type: 'Island',
-    image: 'https://images.unsplash.com/photo-1589519160732-57fc835526d7?w=800&q=80',
-    short: 'Tropical paradise with vibrant marine life',
-  },
-  {
-    id: 4,
-    name: 'Erawan Falls',
-    region: 'West',
-    type: 'Waterfall',
-    image: 'https://images.unsplash.com/photo-1432405972618-c6b0cbaa5a07?w=800&q=80',
-    short: 'Seven-tiered turquoise waterfall in lush jungle',
-  },
-];
-
 export default function HomePage() {
+  const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const openModal = (dest: Destination) => {
+    setSelectedDestination(dest);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setTimeout(() => setSelectedDestination(null), 300);
+  };
   return (
     <div className="min-h-screen">
       <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
@@ -135,7 +116,10 @@ export default function HomePage() {
               whileHover={{ y: -8 }}
               className="group cursor-pointer"
             >
-              <Link to={`/destinations/${dest.id}`} className="block">
+              <button
+                onClick={() => openModal(dest)}
+                className="block text-left w-full"
+              >
                 <div className="relative aspect-[3/4] rounded-3xl overflow-hidden mb-4 shadow-lg shadow-slate-200">
                   <img
                     src={dest.image}
@@ -154,7 +138,7 @@ export default function HomePage() {
                     </div>
                   </div>
                 </div>
-              </Link>
+              </button>
             </motion.div>
           ))}
         </motion.div>
@@ -223,6 +207,12 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <DestinationModal
+        destination={selectedDestination}
+        isOpen={isModalOpen}
+        onClose={closeModal}
+      />
     </div>
   );
 }
