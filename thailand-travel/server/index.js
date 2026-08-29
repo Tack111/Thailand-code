@@ -208,6 +208,292 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
+  if (req.url === '/api/reviews' && req.method === 'GET') {
+    try {
+      const result = await query(`
+        SELECT r.*, u.name as user_name, d.name as destination_name
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        JOIN destinations d ON r.destination_id = d.id
+        WHERE r.status = 'approved'
+        ORDER BY r.created_at DESC
+      `)
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify(result))
+    } catch (err) {
+      console.error(err)
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ message: 'Failed to fetch reviews' }))
+    }
+    return
+  }
+
+  if (req.url === '/api/reviews' && req.method === 'POST') {
+    let body = ''
+    req.on('data', chunk => { body += chunk })
+    req.on('end', async () => {
+      try {
+        const auth = req.headers.authorization
+        if (!auth || !auth.startsWith('Bearer ')) {
+          res.writeHead(401, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ message: 'Unauthorized' }))
+          return
+        }
+        const token = auth.split(' ')[1]
+        const decoded = jwt.verify(token, JWT_SECRET)
+
+        const { destination_id, rating, title, content } = JSON.parse(body)
+        if (!destination_id || !rating || !title || !content) {
+          res.writeHead(400, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ message: 'All fields are required' }))
+          return
+        }
+
+        const result = await query(
+          'INSERT INTO reviews (user_id, destination_id, rating, title, content) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+          [decoded.userId, destination_id, rating, title, content]
+        )
+        res.writeHead(201, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify(result[0]))
+      } catch (err) {
+        console.error(err)
+        res.writeHead(500, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Failed to create review' }))
+      }
+    })
+    return
+  }
+
+  const reviewPutMatch = req.url.match(/^\/api\/reviews\/([^\/]+)$/)
+  if (reviewPutMatch && req.method === 'PUT') {
+    let body = ''
+    req.on('data', chunk => { body += chunk })
+    req.on('end', async () => {
+      try {
+        const auth = req.headers.authorization
+        if (!auth || !auth.startsWith('Bearer ')) {
+          res.writeHead(401, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ message: 'Unauthorized' }))
+          return
+        }
+        const token = auth.split(' ')[1]
+        const decoded = jwt.verify(token, JWT_SECRET)
+
+        const { rating, title, content } = JSON.parse(body)
+        const result = await query(
+          'UPDATE reviews SET rating = $1, title = $2, content = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 AND user_id = $5 RETURNING *',
+          [rating, title, content, reviewPutMatch[1], decoded.userId]
+        )
+        if (result.length === 0) {
+          res.writeHead(404, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ message: 'Review not found' }))
+          return
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify(result[0]))
+      } catch (err) {
+        console.error(err)
+        res.writeHead(500, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Failed to update review' }))
+      }
+    })
+    return
+  }
+
+  const reviewDeleteMatch = req.url.match(/^\/api\/reviews\/([^\/]+)$/)
+  if (reviewDeleteMatch && req.method === 'DELETE') {
+    try {
+      const auth = req.headers.authorization
+      if (!auth || !auth.startsWith('Bearer ')) {
+        res.writeHead(401, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Unauthorized' }))
+        return
+      }
+      const token = auth.split(' ')[1]
+      const decoded = jwt.verify(token, JWT_SECRET)
+
+      const result = await query(
+        'DELETE FROM reviews WHERE id = $1 AND user_id = $2 RETURNING id',
+        [reviewDeleteMatch[1], decoded.userId]
+      )
+      if (result.length === 0) {
+        res.writeHead(404, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Review not found' }))
+        return
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ message: 'Review deleted' }))
+    } catch (err) {
+      console.error(err)
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ message: 'Failed to delete review' }))
+    }
+    return
+  }
+
+  if (req.url === '/api/admin/users' && req.method === 'GET') {
+    try {
+      const auth = req.headers.authorization
+      if (!auth || !auth.startsWith('Bearer ')) {
+        res.writeHead(401, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Unauthorized' }))
+        return
+      }
+      const token = auth.split(' ')[1]
+      const decoded = jwt.verify(token, JWT_SECRET)
+      const admin = await query('SELECT role FROM users WHERE id = $1', [decoded.userId])
+      if (admin.length === 0 || admin[0].role !== 'admin') {
+        res.writeHead(403, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Admin access required' }))
+        return
+      }
+
+      const result = await query('SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC')
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify(result))
+    } catch (err) {
+      console.error(err)
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ message: 'Failed to fetch users' }))
+    }
+    return
+  }
+
+  const adminUserPutMatch = req.url.match(/^\/api\/admin\/users\/([^\/]+)$/)
+  if (adminUserPutMatch && req.method === 'PUT') {
+    let body = ''
+    req.on('data', chunk => { body += chunk })
+    req.on('end', async () => {
+      try {
+        const auth = req.headers.authorization
+        if (!auth || !auth.startsWith('Bearer ')) {
+          res.writeHead(401, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ message: 'Unauthorized' }))
+          return
+        }
+        const token = auth.split(' ')[1]
+        const decoded = jwt.verify(token, JWT_SECRET)
+        const admin = await query('SELECT role FROM users WHERE id = $1', [decoded.userId])
+        if (admin.length === 0 || admin[0].role !== 'admin') {
+          res.writeHead(403, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ message: 'Admin access required' }))
+          return
+        }
+
+        const { role } = JSON.parse(body)
+        const result = await query('UPDATE users SET role = $1 WHERE id = $2 RETURNING id, name, email, role', [role, adminUserPutMatch[1]])
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify(result[0]))
+      } catch (err) {
+        console.error(err)
+        res.writeHead(500, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Failed to update user' }))
+      }
+    })
+    return
+  }
+
+  if (req.url === '/api/admin/actions' && req.method === 'GET') {
+    try {
+      const auth = req.headers.authorization
+      if (!auth || !auth.startsWith('Bearer ')) {
+        res.writeHead(401, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Unauthorized' }))
+        return
+      }
+      const token = auth.split(' ')[1]
+      const decoded = jwt.verify(token, JWT_SECRET)
+      const admin = await query('SELECT role FROM users WHERE id = $1', [decoded.userId])
+      if (admin.length === 0 || admin[0].role !== 'admin') {
+        res.writeHead(403, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Admin access required' }))
+        return
+      }
+
+      const result = await query(`
+        SELECT ua.*, u.name as user_name
+        FROM user_actions ua
+        JOIN users u ON ua.user_id = u.id
+        ORDER BY ua.created_at DESC
+      `)
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify(result))
+    } catch (err) {
+      console.error(err)
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ message: 'Failed to fetch actions' }))
+    }
+    return
+  }
+
+  if (req.url === '/api/admin/reviews' && req.method === 'GET') {
+    try {
+      const auth = req.headers.authorization
+      if (!auth || !auth.startsWith('Bearer ')) {
+        res.writeHead(401, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Unauthorized' }))
+        return
+      }
+      const token = auth.split(' ')[1]
+      const decoded = jwt.verify(token, JWT_SECRET)
+      const admin = await query('SELECT role FROM users WHERE id = $1', [decoded.userId])
+      if (admin.length === 0 || admin[0].role !== 'admin') {
+        res.writeHead(403, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Admin access required' }))
+        return
+      }
+
+      const result = await query(`
+        SELECT r.*, u.name as user_name, d.name as destination_name
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        JOIN destinations d ON r.destination_id = d.id
+        ORDER BY r.created_at DESC
+      `)
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify(result))
+    } catch (err) {
+      console.error(err)
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ message: 'Failed to fetch reviews' }))
+    }
+    return
+  }
+
+  const adminReviewPutMatch = req.url.match(/^\/api\/admin\/reviews\/([^\/]+)$/)
+  if (adminReviewPutMatch && req.method === 'PUT') {
+    let body = ''
+    req.on('data', chunk => { body += chunk })
+    req.on('end', async () => {
+      try {
+        const auth = req.headers.authorization
+        if (!auth || !auth.startsWith('Bearer ')) {
+          res.writeHead(401, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ message: 'Unauthorized' }))
+          return
+        }
+        const token = auth.split(' ')[1]
+        const decoded = jwt.verify(token, JWT_SECRET)
+        const admin = await query('SELECT role FROM users WHERE id = $1', [decoded.userId])
+        if (admin.length === 0 || admin[0].role !== 'admin') {
+          res.writeHead(403, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ message: 'Admin access required' }))
+          return
+        }
+
+        const { status } = JSON.parse(body)
+        const result = await query('UPDATE reviews SET status = $1 WHERE id = $2 RETURNING *', [status, adminReviewPutMatch[1]])
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify(result[0]))
+      } catch (err) {
+        console.error(err)
+        res.writeHead(500, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Failed to moderate review' }))
+      }
+    })
+    return
+  }
+
   res.writeHead(404, { 'Content-Type': 'application/json' })
   res.end(JSON.stringify({ message: 'Not Found' }))
 })
