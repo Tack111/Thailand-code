@@ -1,6 +1,7 @@
 import { NEON_DATABASE_URL } from '../utils/env'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
+const isNetlify = import.meta.env.PROD && window.location.hostname.includes('netlify.app')
+const API_BASE = isNetlify ? '/.netlify/functions/api' : (import.meta.env.VITE_API_BASE_URL || '')
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`

@@ -1,4 +1,4 @@
-.# Thailand travel website development plan
+B.# Thailand travel website development plan
 
 ## Project Goal
 Build a responsive React web app where users can discover, review, and get recommendations for travel places in Thailand.
