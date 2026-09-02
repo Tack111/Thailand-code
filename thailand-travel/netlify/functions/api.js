@@ -110,6 +110,97 @@ export const handler = async (event) => {
       return jsonResponse(200, result)
     }
 
+    if (path === '/reviews' && method === 'GET') {
+      const result = await query(`
+        SELECT r.*, u.name as user_name, d.name as destination_name
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        JOIN destinations d ON r.destination_id = d.id
+        WHERE r.status = 'approved'
+        ORDER BY r.created_at DESC
+      `)
+      return jsonResponse(200, result)
+    }
+
+    if (path === '/reviews' && method === 'POST') {
+      const auth = event.headers.authorization
+      if (!auth || !auth.startsWith('Bearer ')) {
+        return jsonResponse(401, { message: 'Unauthorized' })
+      }
+      const token = auth.split(' ')[1]
+      const decoded = jwt.verify(token, JWT_SECRET)
+
+      const { destination_id, rating, title, content } = body
+      if (!destination_id || !rating || !title || !content) {
+        return jsonResponse(400, { message: 'All fields are required' })
+      }
+
+      const result = await query(
+        'INSERT INTO reviews (user_id, destination_id, rating, title, content) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [decoded.userId, destination_id, rating, title, content]
+      )
+      return jsonResponse(201, result[0])
+    }
+
+    if (path === '/admin/users' && method === 'GET') {
+      const auth = event.headers.authorization
+      if (!auth || !auth.startsWith('Bearer ')) {
+        return jsonResponse(401, { message: 'Unauthorized' })
+      }
+      const token = auth.split(' ')[1]
+      const decoded = jwt.verify(token, JWT_SECRET)
+      const admin = await query('SELECT role FROM users WHERE id = $1', [decoded.userId])
+      if (admin.length === 0 || admin[0].role !== 'admin') {
+        return jsonResponse(403, { message: 'Admin access required' })
+      }
+
+      const result = await query('SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC')
+      return jsonResponse(200, result)
+    }
+
+    if (path === '/admin/actions' && method === 'GET') {
+      const auth = event.headers.authorization
+      if (!auth || !auth.startsWith('Bearer ')) {
+        return jsonResponse(401, { message: 'Unauthorized' })
+      }
+      const token = auth.split(' ')[1]
+      const decoded = jwt.verify(token, JWT_SECRET)
+      const admin = await query('SELECT role FROM users WHERE id = $1', [decoded.userId])
+      if (admin.length === 0 || admin[0].role !== 'admin') {
+        return jsonResponse(403, { message: 'Admin access required' })
+      }
+
+      const result = await query(`
+        SELECT ua.*, u.name as user_name
+        FROM user_actions ua
+        JOIN users u ON ua.user_id = u.id
+        ORDER BY ua.created_at DESC
+      `)
+      return jsonResponse(200, result)
+    }
+
+    if (path === '/admin/reviews' && method === 'GET') {
+      const auth = event.headers.authorization
+      if (!auth || !auth.startsWith('Bearer ')) {
+        return jsonResponse(401, { message: 'Unauthorized' })
+      }
+      const token = auth.split(' ')[1]
+      const decoded = jwt.verify(token, JWT_SECRET)
+      const admin = await query('SELECT role FROM users WHERE id = $1', [decoded.userId])
+      if (admin.length === 0 || admin[0].role !== 'admin') {
+        return jsonResponse(403, { message: 'Admin access required' })
+      }
+
+      const result = await query(`
+        SELECT r.*, u.name as user_name, d.name as destination_name
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        JOIN destinations d ON r.destination_id = d.id
+        ORDER BY r.created_at DESC
+      `)
+      return jsonResponse(200, result)
+    }
+
     return jsonResponse(404, { message: 'Not Found' })
   } catch (err) {
     console.error('Function error:', err.message)
