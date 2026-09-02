@@ -1,7 +1,8 @@
 const isProduction = import.meta.env.PROD
 const API_BASE = isProduction ? '/.netlify/functions/api' : ''
 
-async function request(endpoint, options = {}) {
+async function request(path, options = {}) {
+  const endpoint = isProduction ? path : `/api${path}`
   const url = `${API_BASE}${endpoint}`
   const response = await fetch(url, {
     ...options,
@@ -20,29 +21,29 @@ async function request(endpoint, options = {}) {
 }
 
 export async function getReviews() {
-  return request('/api/reviews')
+  return request('/reviews')
 }
 
 export async function getDestinationReviews(destinationId) {
-  return request(`/api/reviews?destination_id=${destinationId}`)
+  return request(`/reviews?destination_id=${destinationId}`)
 }
 
 export async function createReview(reviewData) {
-  return request('/api/reviews', {
+  return request('/reviews', {
     method: 'POST',
     body: JSON.stringify(reviewData),
   })
 }
 
 export async function updateReview(id, reviewData) {
-  return request(`/api/reviews/${id}`, {
+  return request(`/reviews/${id}`, {
     method: 'PUT',
     body: JSON.stringify(reviewData),
   })
 }
 
 export async function deleteReview(id) {
-  return request(`/api/reviews/${id}`, {
+  return request(`/reviews/${id}`, {
     method: 'DELETE',
   })
 }

@@ -1,7 +1,8 @@
 const isProduction = import.meta.env.PROD
 const API_BASE = isProduction ? '/.netlify/functions/api' : ''
 
-async function request(endpoint, options = {}) {
+async function request(path, options = {}) {
+  const endpoint = isProduction ? path : `/api${path}`
   const url = `${API_BASE}${endpoint}`
   const response = await fetch(url, {
     ...options,
@@ -20,26 +21,26 @@ async function request(endpoint, options = {}) {
 }
 
 export async function getAllUsers() {
-  return request('/api/admin/users')
+  return request('/admin/users')
 }
 
 export async function updateUserRole(userId, role) {
-  return request(`/api/admin/users/${userId}`, {
+  return request(`/admin/users/${userId}`, {
     method: 'PUT',
     body: JSON.stringify({ role }),
   })
 }
 
 export async function getUserActions() {
-  return request('/api/admin/actions')
+  return request('/admin/actions')
 }
 
 export async function getAllReviews() {
-  return request('/api/admin/reviews')
+  return request('/admin/reviews')
 }
 
 export async function moderateReview(id, status) {
-  return request(`/api/admin/reviews/${id}`, {
+  return request(`/admin/reviews/${id}`, {
     method: 'PUT',
     body: JSON.stringify({ status }),
   })

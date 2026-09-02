@@ -1,7 +1,8 @@
 const isProduction = import.meta.env.PROD
 const API_BASE = isProduction ? '/.netlify/functions/api' : ''
 
-async function request(endpoint, options = {}) {
+async function request(path, options = {}) {
+  const endpoint = isProduction ? path : `/api${path}`
   const url = `${API_BASE}${endpoint}`
   const response = await fetch(url, {
     ...options,
@@ -20,19 +21,19 @@ async function request(endpoint, options = {}) {
 }
 
 export async function register(name, email, password) {
-  return request('/api/auth/register', {
+  return request('/auth/register', {
     method: 'POST',
     body: JSON.stringify({ name, email, password }),
   })
 }
 
 export async function login(email, password) {
-  return request('/api/auth/login', {
+  return request('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   })
 }
 
 export async function getProfile() {
-  return request('/api/auth/profile')
+  return request('/auth/profile')
 }

@@ -1,7 +1,8 @@
 const isProduction = import.meta.env.PROD
 const API_BASE = isProduction ? '/.netlify/functions/api' : ''
 
-async function request(endpoint, options = {}) {
+async function request(path, options = {}) {
+  const endpoint = isProduction ? path : `/api${path}`
   const url = `${API_BASE}${endpoint}`
   const response = await fetch(url, {
     ...options,
@@ -20,9 +21,9 @@ async function request(endpoint, options = {}) {
 }
 
 export async function getDestinations() {
-  return request('/api/destinations')
+  return request('/destinations')
 }
 
 export async function getDestination(id) {
-  return request(`/api/destinations/${id}`)
+  return request(`/destinations/${id}`)
 }
