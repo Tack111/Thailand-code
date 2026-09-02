@@ -1,4 +1,5 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
+const isProduction = import.meta.env.PROD
+const API_BASE = isProduction ? '/.netlify/functions/api' : ''
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`
