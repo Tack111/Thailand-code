@@ -208,6 +208,44 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
+  const destinationMatch = req.url.match(/^\/api\/destinations\/([^\/]+)$/)
+  if (destinationMatch && req.method === 'GET') {
+    try {
+      const result = await query('SELECT * FROM destinations WHERE id = $1', [destinationMatch[1]])
+      if (result.length === 0) {
+        res.writeHead(404, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Destination not found' }))
+        return
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify(result[0]))
+    } catch (err) {
+      console.error(err)
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ message: 'Failed to fetch destination' }))
+    }
+    return
+  }
+
+  const destinationMatch = req.url.match(/^\/api\/destinations\/([^\/]+)$/)
+  if (destinationMatch && req.method === 'GET') {
+    try {
+      const result = await query('SELECT * FROM destinations WHERE id = $1', [destinationMatch[1]])
+      if (result.length === 0) {
+        res.writeHead(404, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Destination not found' }))
+        return
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify(result[0]))
+    } catch (err) {
+      console.error(err)
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ message: 'Failed to fetch destination' }))
+    }
+    return
+  }
+
   if (req.url === '/api/reviews' && req.method === 'GET') {
     try {
       const result = await query(`

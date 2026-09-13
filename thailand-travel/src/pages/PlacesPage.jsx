@@ -1,45 +1,23 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { getDestinations } from '../services/destinations'
-
-const destinations = [
-  { id: 1, name: 'Bangkok', location: 'Bangkok, Central Thailand', description: 'The vibrant capital city with temples, markets, and amazing street food.', image_url: '/images/bangkok.jpg', rating: 4.5, category: 'destinations', details: 'Bangkok is a city of contrasts, where ancient temples stand alongside modern skyscrapers. Don\'t miss the Grand Palace, Wat Arun, and the floating markets.' },
-  { id: 2, name: 'Chiang Mai', location: 'Chiang Mai, Northern Thailand', description: 'Cultural hub surrounded by mountains, temples, and lush jungles.', image_url: '/images/chiangmai.jpg', rating: 4.8, category: 'destinations', details: 'Chiang Mai offers a relaxed atmosphere with over 300 temples, ethical elephant sanctuaries, and the famous Sunday Walking Street.' },
-  { id: 3, name: 'Phuket', location: 'Phuket, Southern Thailand', description: 'Thailand\'s largest island with beautiful beaches and vibrant nightlife.', image_url: '/images/phuket.jpg', rating: 4.6, category: 'destinations', details: 'Phuket boasts pristine beaches like Patong, Kata, and Nai Harn, plus a vibrant old town with Sino-Portuguese architecture.' },
-  { id: 4, name: 'Krabi', location: 'Krabi, Southern Thailand', description: 'Stunning limestone cliffs, clear waters, and incredible diving spots.', image_url: '/images/krabi.jpg', rating: 4.7, category: 'destinations', details: 'Krabi is famous for Railay Beach, accessible only by boat, and offers world-class rock climbing, island hopping, and stunning sunsets.' },
-  { id: 5, name: 'Ayutthaya', location: 'Ayutthaya, Central Thailand', description: 'Ancient capital with magnificent temple ruins and UNESCO World Heritage sites.', image_url: '/images/ayutthaya.jpg', rating: 4.4, category: 'destinations', details: 'Ayutthaya was once the thriving capital of Siam. Today, you can explore the UNESCO-listedHistorical Park by bicycle or boat.' },
-  { id: 6, name: 'Koh Samui', location: 'Koh Samui, Surat Thani', description: 'Tropical paradise with palm-fringed beaches and luxury resorts.', image_url: '/images/kohsamui.jpg', rating: 4.5, category: 'destinations', details: 'Koh Samui combines natural beauty with luxury. Visit the Big Buddha, Na Muang waterfalls, and enjoy fresh seafood at beachfront restaurants.' },
-]
-
-const foodPlaces = [
-  { id: 101, name: 'Jay Fai', location: '327 Mahachai Rd, Bangkok', description: 'Michelin-starred street food legendary for crab omelette and Pad Kee Mao.', image_url: '/images/jayfai.jpg', rating: 4.9, category: 'food', details: 'Jay Fai is a Bangkok street food institution. Famous for its fiery crab omelette, Pad Kee Mao, and other Thai classics cooked on a massive wok.' },
-  { id: 102, name: 'Khao Soi Khun Yai', location: 'Chang Phueak, Chiang Mai', description: 'The best khao soi in Chiang Mai, a rich coconut curry noodle soup.', image_url: '/images/khaosoi.jpg', rating: 4.8, category: 'food', details: 'This family-run stall serves creamy, tangy khao soi with tender chicken, topped with crispy noodles, pickled mustard greens, and lime.' },
-  { id: 103, name: 'Ta Khrai', location: 'Ao Nang, Krabi', description: 'Fresh grilled seafood on the beach with stunning sunset views.', image_url: '/images/takhrai.jpg', rating: 4.7, category: 'food', details: 'Enjoy freshly caught grilled fish, prawns, and squid right on the sand at Ao Nang Beach, with the sun setting behind the limestone cliffs.' },
-  { id: 104, name: 'Roti Pairam', location: 'Ayutthaya Historical Park, Ayutthaya', description: 'Famous crispy roti with banana and condensed milk, an Ayutthaya specialty.', image_url: '/images/rotipairam.jpg', rating: 4.6, category: 'food', details: 'This legendary roti vendor has been serving crispy, flaky roti stuffed with banana and drizzled with condensed milk for decades.' },
-]
-
-const tourismSpots = [
-  { id: 201, name: 'Doi Suthep', location: 'Doi Suthep, Chiang Mai', description: 'Sacred temple on a mountain with panoramic views of Chiang Mai city.', image_url: '/images/doisuthep.jpg', rating: 4.8, category: 'tourism', details: 'Wat Phra That Doi Suthep is one of northern Thailand\'s most sacred temples. The 306-step Naga staircase leads to golden chedis with stunning city views.' },
-  { id: 202, name: 'Railay Beach', location: 'Railay, Krabi', description: 'A tropical paradise accessible only by boat, famous for rock climbing.', image_url: '/images/railay.jpg', rating: 4.9, category: 'tourism', details: 'Railay Beach is a secluded peninsula with towering limestone cliffs, turquoise waters, and some of the best rock climbing in the world.' },
-  { id: 203, name: 'Big Buddha', location: 'Big Buddha Temple, Koh Samui', description: 'A 12-meter golden Buddha statue overlooking the island.', image_url: '/images/bigbuddha.jpg', rating: 4.7, category: 'tourism', details: 'The Big Buddha temple offers panoramic views and a serene atmosphere. The golden statue is visible from kilometers away and is a must-visit on Koh Samui.' },
-  { id: 204, name: 'Wat Mahathat', location: 'Ayutthaya Historical Park, Ayutthaya', description: 'Famous for the iconic Buddha head entwined in tree roots.', image_url: '/images/watmahathat.jpg', rating: 4.6, category: 'tourism', details: 'The most photographed site in Ayutthaya, this ancient temple features a sandstone Buddha head nestled in the roots of a banyan tree.' },
-]
-
-const allPlaces = [...destinations, ...foodPlaces, ...tourismSpots]
 
 export default function PlacesPage() {
   const [places, setPlaces] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selectedPlace, setSelectedPlace] = useState(null)
   const [filter, setFilter] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [priceFilter, setPriceFilter] = useState('all')
+  const [selectedPlace, setSelectedPlace] = useState(null)
 
   useEffect(() => {
     const fetchDestinations = async () => {
       try {
         const data = await getDestinations()
         setPlaces(data)
-      } catch {
-        setPlaces(destinations)
+      } catch (err) {
+        console.error('Failed to fetch destinations:', err)
       } finally {
         setLoading(false)
       }
@@ -47,107 +25,191 @@ export default function PlacesPage() {
     fetchDestinations()
   }, [])
 
-  const filteredPlaces = filter === 'all' ? allPlaces : allPlaces.filter(p => p.category === filter)
+  const filteredPlaces = places.filter(place => {
+    const matchesCategory = filter === 'all' || place.category === filter
+    const matchesSearch = place.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      place.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      place.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesPrice = priceFilter === 'all' || place.price_range === priceFilter
+    return matchesCategory && matchesSearch && matchesPrice
+  })
+
+  const categories = [
+    { key: 'all', label: 'All Places', icon: '🌏' },
+    { key: 'attraction', label: 'Attractions', icon: '🏛️' },
+    { key: 'restaurant', label: 'Restaurants', icon: '🍽️' },
+    { key: 'cafe', label: 'Cafes', icon: '☕' },
+    { key: 'street_food', label: 'Street Food', icon: '🍜' },
+    { key: 'beach', label: 'Beaches', icon: '🏖️' },
+    { key: 'temple', label: 'Temples', icon: '🛕' },
+    { key: 'nature', label: 'Nature', icon: '🌿' },
+  ]
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dark-blue"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-dark-blue text-white py-16 px-4">
-        <div className="max-w-7xl mx-auto text-center">
+      {/* Header */}
+      <section className="bg-gradient-to-r from-emerald-800 to-teal-700 text-white py-16 px-4">
+        <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Explore Thailand</h1>
-          <p className="text-xl text-gray-200">Discover destinations, food, and tourism spots</p>
+          <p className="text-xl text-emerald-100 mb-8">Discover {places.length}+ curated places with real ratings and insider tips</p>
+
+          {/* Search Bar */}
+          <div className="max-w-2xl">
+            <div className="relative">
+              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search places, food, attractions..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-4 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              />
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex flex-wrap gap-4 justify-center mb-12">
-          {[
-            { key: 'all', label: 'All Places' },
-            { key: 'destinations', label: 'Destinations' },
-            { key: 'food', label: 'Food & Dining' },
-            { key: 'tourism', label: 'Tourism Spots' },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              className={`px-6 py-2 rounded-full font-medium transition-colors ${
-                filter === tab.key
-                  ? 'bg-brown text-white'
-                  : 'bg-white text-dark-blue hover:bg-gray-100'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {(filter === 'all' ? allPlaces : filteredPlaces).map((place, i) => (
-            <motion.div
-              key={place.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              onClick={() => setSelectedPlace(place)}
-              className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow cursor-pointer"
-            >
-              <img src={place.image_url} alt={place.name} className="w-full h-48 object-cover" />
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-2xl font-bold text-dark-blue">{place.name}</h3>
-                  <span className="bg-brown text-white px-2 py-1 rounded text-sm">★ {place.rating}</span>
-                </div>
-                <p className="text-brown font-medium mb-2">{place.location}</p>
-                <p className="text-gray-600">{place.description}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      <AnimatePresence>
-        {selectedPlace && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-            onClick={() => setSelectedPlace(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img src={selectedPlace.image_url} alt={selectedPlace.name} className="w-full h-64 object-cover" />
-              <div className="p-8">
-                <div className="flex justify-between items-start mb-4">
-                  <h2 className="text-3xl font-bold text-dark-blue">{selectedPlace.name}</h2>
-                  <span className="bg-brown text-white px-3 py-1 rounded">★ {selectedPlace.rating}</span>
-                </div>
-                <p className="text-brown font-medium mb-4">{selectedPlace.location}</p>
-                <p className="text-gray-600 mb-6">{selectedPlace.details || selectedPlace.description}</p>
+        {/* Filters */}
+        <div className="flex flex-col lg:flex-row gap-6 mb-10">
+          {/* Category Filter */}
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Category</h3>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
                 <button
-                  onClick={() => setSelectedPlace(null)}
-                  className="bg-dark-blue hover:bg-light-blue text-white px-6 py-2 rounded-lg transition-colors"
+                  key={cat.key}
+                  onClick={() => setFilter(cat.key)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    filter === cat.key
+                      ? 'bg-emerald-600 text-white shadow-md'
+                      : 'bg-white text-gray-700 hover:bg-emerald-50 border border-gray-200'
+                  }`}
                 >
-                  Close
+                  <span className="mr-1">{cat.icon}</span>
+                  {cat.label}
                 </button>
-              </div>
-            </motion.div>
-          </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Price Filter */}
+          <div className="lg:w-48">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Price</h3>
+            <select
+              value={priceFilter}
+              onChange={(e) => setPriceFilter(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="all">All Prices</option>
+              <option value="$">Budget ($)</option>
+              <option value="$$">Mid-range ($$)</option>
+              <option value="$$$">Upscale ($$$)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Results Count */}
+        <div className="flex justify-between items-center mb-6">
+          <p className="text-gray-600">
+            Showing <span className="font-semibold text-gray-900">{filteredPlaces.length}</span> places
+          </p>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="text-emerald-600 hover:text-emerald-700 text-sm font-medium"
+            >
+              Clear search
+            </button>
+          )}
+        </div>
+
+        {/* Places Grid */}
+        {filteredPlaces.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No places found</h3>
+            <p className="text-gray-600">Try adjusting your search or filters</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredPlaces.map((place, i) => (
+              <motion.div
+                key={place.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <Link to={`/places/${place.id}`} className="group block">
+                  <div className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1">
+                    <div className="relative aspect-[4/3] overflow-hidden">
+                      <img
+                        src={place.image_url || '/images/hero.jpg'}
+                        alt={place.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-4 left-4 flex gap-2">
+                        <span className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-sm font-medium text-emerald-700">
+                          {place.category || 'Attraction'}
+                        </span>
+                        {place.is_trending && (
+                          <span className="px-3 py-1 bg-amber-500 text-white rounded-full text-sm font-medium">
+                            🔥 Trending
+                          </span>
+                        )}
+                      </div>
+                      {place.price_range && (
+                        <div className="absolute top-4 right-4">
+                          <span className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700">
+                            {place.price_range}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-6">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center text-amber-500">
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          <span className="ml-1 font-semibold">{place.rating || '4.5'}</span>
+                        </div>
+                        <span className="text-gray-400 text-sm">({place.google_review_count || '100+} reviews)</span>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors">
+                        {place.name}
+                      </h3>
+                      <p className="text-gray-600 text-sm line-clamp-2 mb-3">
+                        {place.why_visit || place.description}
+                      </p>
+                      {place.location && (
+                        <p className="text-gray-500 text-sm flex items-center gap-1">
+                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <span className="truncate">{place.location}</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
         )}
-      </AnimatePresence>
+      </div>
     </div>
   )
 }

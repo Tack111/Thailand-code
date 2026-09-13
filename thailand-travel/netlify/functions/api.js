@@ -110,6 +110,15 @@ export const handler = async (event) => {
       return jsonResponse(200, result)
     }
 
+    const destinationMatch = path.match(/^\/destinations\/([^\/]+)$/)
+    if (destinationMatch && method === 'GET') {
+      const result = await query('SELECT * FROM destinations WHERE id = $1', [destinationMatch[1]])
+      if (result.length === 0) {
+        return jsonResponse(404, { message: 'Destination not found' })
+      }
+      return jsonResponse(200, result[0])
+    }
+
     if (path === '/reviews' && method === 'GET') {
       const result = await query(`
         SELECT r.*, u.name as user_name, d.name as destination_name
