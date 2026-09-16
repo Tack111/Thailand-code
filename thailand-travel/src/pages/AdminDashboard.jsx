@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
-import { getAllUsers, updateUserRole } from '../services/admin'
-import { getAllReviews } from '../services/admin'
+import { getAllUsers, getAllReviews } from '../services/admin'
 
 export default function AdminDashboard() {
   const { user } = useAuth()

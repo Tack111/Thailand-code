@@ -27,7 +27,7 @@ export default function RegisterPage() {
 
     try {
       const data = await registerApi(name, email, password)
-      register(data.user)
+      register(data.user, data.token)
       navigate('/dashboard')
     } catch (err) {
       setError(err.message)

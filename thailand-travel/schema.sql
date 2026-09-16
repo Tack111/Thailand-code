@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS destinations (
   is_featured BOOLEAN DEFAULT FALSE,
   visit_duration VARCHAR(100),
   transport_options TEXT,
+  must_try_dishes TEXT,
   last_updated DATE DEFAULT CURRENT_DATE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

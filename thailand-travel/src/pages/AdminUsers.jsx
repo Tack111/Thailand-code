@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { useAuth } from '../context/AuthContext'
 import { getAllUsers, updateUserRole } from '../services/admin'
 
 export default function AdminUsers() {

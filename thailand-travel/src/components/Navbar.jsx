@@ -24,6 +24,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className="text-gray-600 hover:text-emerald-600 transition-colors font-medium">Home</Link>
             <Link to="/places" className="text-gray-600 hover:text-emerald-600 transition-colors font-medium">Places</Link>
+            <Link to="/food" className="text-gray-600 hover:text-emerald-600 transition-colors font-medium">Food Guide</Link>
             <Link to="/reviews" className="text-gray-600 hover:text-emerald-600 transition-colors font-medium">Reviews</Link>
             {!user && (
               <>
@@ -65,6 +66,7 @@ export default function Navbar() {
           <div className="md:hidden pb-4 space-y-2 border-t border-gray-100 pt-4">
             <Link to="/" className="block py-2 text-gray-600 hover:text-emerald-600 font-medium">Home</Link>
             <Link to="/places" className="block py-2 text-gray-600 hover:text-emerald-600 font-medium">Places</Link>
+            <Link to="/food" className="block py-2 text-gray-600 hover:text-emerald-600 font-medium">Food Guide</Link>
             <Link to="/reviews" className="block py-2 text-gray-600 hover:text-emerald-600 font-medium">Reviews</Link>
             {!user && (
               <>

@@ -1,5 +1,3 @@
-import { useState } from 'react'
-
 export default function SearchBar({ value, onChange, placeholder = "Search places, food, attractions..." }) {
   return (
     <div className="relative max-w-2xl">

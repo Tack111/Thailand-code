@@ -4,10 +4,12 @@ const API_BASE = isProduction ? '/.netlify/functions/api' : ''
 async function request(path, options = {}) {
   const endpoint = isProduction ? path : `/api${path}`
   const url = `${API_BASE}${endpoint}`
+  const token = localStorage.getItem('token')
   const response = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...options.headers,
     },
   })
@@ -26,6 +28,10 @@ export async function getReviews() {
 
 export async function getDestinationReviews(destinationId) {
   return request(`/reviews?destination_id=${destinationId}`)
+}
+
+export async function getUserReviews(userId) {
+  return request(`/reviews?user_id=${userId}`)
 }
 
 export async function createReview(reviewData) {

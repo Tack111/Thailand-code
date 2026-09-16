@@ -6,6 +6,7 @@ import AdminLayout from './layouts/AdminLayout'
 import ProtectedRoute from './routes/ProtectedRoute'
 import LandingPage from './pages/LandingPage'
 import PlacesPage from './pages/PlacesPage'
+import FoodPage from './pages/FoodPage'
 import DestinationDetail from './pages/DestinationDetail'
 import ReviewsPage from './pages/ReviewsPage'
 import LoginPage from './pages/LoginPage'
@@ -24,6 +25,7 @@ export default function App() {
           <Route element={<PublicLayout />}>
             <Route path="/" element={<LandingPage />} />
             <Route path="/places" element={<PlacesPage />} />
+            <Route path="/food" element={<FoodPage />} />
             <Route path="/places/:id" element={<DestinationDetail />} />
             <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/login" element={<LoginPage />} />

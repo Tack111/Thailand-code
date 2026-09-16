@@ -29,6 +29,39 @@ function jsonResponse(statusCode, body) {
   }
 }
 
+function requireAuth(event) {
+  const auth = event.headers.authorization
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return null
+  }
+  const token = auth.split(' ')[1]
+  const decoded = jwt.verify(token, JWT_SECRET)
+  return decoded
+}
+
+async function requireAdmin(event) {
+  const decoded = requireAuth(event)
+  if (!decoded) {
+    return { error: jsonResponse(401, { message: 'Unauthorized' }), decoded: null }
+  }
+  const admin = await query('SELECT role FROM users WHERE id = $1', [decoded.userId])
+  if (admin.length === 0 || admin[0].role !== 'admin') {
+    return { error: jsonResponse(403, { message: 'Admin access required' }), decoded: null }
+  }
+  return { error: null, decoded }
+}
+
+async function logUserAction(userId, actionType, description) {
+  try {
+    await query(
+      'INSERT INTO user_actions (user_id, action_type, description) VALUES ($1, $2, $3)',
+      [userId, actionType, description]
+    )
+  } catch (err) {
+    console.error('Failed to log user action:', err.message)
+  }
+}
+
 export const handler = async (event) => {
   const path = event.path.replace('/.netlify/functions/api', '')
   const method = event.httpMethod
@@ -50,6 +83,8 @@ export const handler = async (event) => {
     }
   }
 
+  const queryParams = event.queryStringParameters || {}
+
   try {
     if (path === '/auth/register' && method === 'POST') {
       const { name, email, password } = body
@@ -68,6 +103,7 @@ export const handler = async (event) => {
         [name, email, password_hash]
       )
 
+      await logUserAction(result[0].id, 'registration', `${name} registered a new account`)
       const token = jwt.sign({ userId: result[0].id, email: result[0].email }, JWT_SECRET, { expiresIn: '7d' })
       return jsonResponse(201, { user: result[0], token })
     }
@@ -85,19 +121,18 @@ export const handler = async (event) => {
         return jsonResponse(401, { message: 'Invalid credentials' })
       }
 
+      await logUserAction(user.id, 'login', `${user.name} logged in`)
       const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' })
       const { password_hash, ...safeUser } = user
       return jsonResponse(200, { user: safeUser, token })
     }
 
     if (path === '/auth/profile' && method === 'GET') {
-      const auth = event.headers.authorization
-      if (!auth || !auth.startsWith('Bearer ')) {
+      const decoded = requireAuth(event)
+      if (!decoded) {
         return jsonResponse(401, { message: 'Unauthorized' })
       }
 
-      const token = auth.split(' ')[1]
-      const decoded = jwt.verify(token, JWT_SECRET)
       const result = await query('SELECT id, name, email, role FROM users WHERE id = $1', [decoded.userId])
       if (result.length === 0) {
         return jsonResponse(404, { message: 'User not found' })
@@ -110,7 +145,7 @@ export const handler = async (event) => {
       return jsonResponse(200, result)
     }
 
-    const destinationMatch = path.match(/^\/destinations\/([^\/]+)$/)
+    const destinationMatch = path.match(/^\/destinations\/([^/]+)$/)
     if (destinationMatch && method === 'GET') {
       const result = await query('SELECT * FROM destinations WHERE id = $1', [destinationMatch[1]])
       if (result.length === 0) {
@@ -120,24 +155,38 @@ export const handler = async (event) => {
     }
 
     if (path === '/reviews' && method === 'GET') {
-      const result = await query(`
+      let sql = `
         SELECT r.*, u.name as user_name, d.name as destination_name
         FROM reviews r
         JOIN users u ON r.user_id = u.id
         JOIN destinations d ON r.destination_id = d.id
-        WHERE r.status = 'approved'
-        ORDER BY r.created_at DESC
-      `)
+      `
+      const conditions = []
+      const params = []
+
+      if (queryParams.destination_id) {
+        params.push(queryParams.destination_id)
+        conditions.push(`r.destination_id = $${params.length}`)
+      }
+      if (queryParams.user_id) {
+        params.push(queryParams.user_id)
+        conditions.push(`r.user_id = $${params.length}`)
+      }
+
+      if (conditions.length > 0) {
+        sql += ' WHERE ' + conditions.join(' AND ')
+      }
+      sql += ' ORDER BY r.created_at DESC'
+
+      const result = await query(sql, params)
       return jsonResponse(200, result)
     }
 
     if (path === '/reviews' && method === 'POST') {
-      const auth = event.headers.authorization
-      if (!auth || !auth.startsWith('Bearer ')) {
+      const decoded = requireAuth(event)
+      if (!decoded) {
         return jsonResponse(401, { message: 'Unauthorized' })
       }
-      const token = auth.split(' ')[1]
-      const decoded = jwt.verify(token, JWT_SECRET)
 
       const { destination_id, rating, title, content } = body
       if (!destination_id || !rating || !title || !content) {
@@ -148,36 +197,70 @@ export const handler = async (event) => {
         'INSERT INTO reviews (user_id, destination_id, rating, title, content) VALUES ($1, $2, $3, $4, $5) RETURNING *',
         [decoded.userId, destination_id, rating, title, content]
       )
+
+      await logUserAction(decoded.userId, 'review_creation', `Created review for destination: ${title}`)
       return jsonResponse(201, result[0])
     }
 
-    if (path === '/admin/users' && method === 'GET') {
-      const auth = event.headers.authorization
-      if (!auth || !auth.startsWith('Bearer ')) {
+    const reviewMatch = path.match(/^\/reviews\/([^/]+)$/)
+    if (reviewMatch && method === 'PUT') {
+      const decoded = requireAuth(event)
+      if (!decoded) {
         return jsonResponse(401, { message: 'Unauthorized' })
       }
-      const token = auth.split(' ')[1]
-      const decoded = jwt.verify(token, JWT_SECRET)
-      const admin = await query('SELECT role FROM users WHERE id = $1', [decoded.userId])
-      if (admin.length === 0 || admin[0].role !== 'admin') {
-        return jsonResponse(403, { message: 'Admin access required' })
+
+      const { rating, title, content } = body
+      const result = await query(
+        'UPDATE reviews SET rating = $1, title = $2, content = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 AND user_id = $5 RETURNING *',
+        [rating, title, content, reviewMatch[1], decoded.userId]
+      )
+      if (result.length === 0) {
+        return jsonResponse(404, { message: 'Review not found' })
       }
+
+      await logUserAction(decoded.userId, 'review_update', `Updated review: ${title}`)
+      return jsonResponse(200, result[0])
+    }
+
+    if (reviewMatch && method === 'DELETE') {
+      const decoded = requireAuth(event)
+      if (!decoded) {
+        return jsonResponse(401, { message: 'Unauthorized' })
+      }
+
+      const result = await query(
+        'DELETE FROM reviews WHERE id = $1 AND user_id = $2 RETURNING id',
+        [reviewMatch[1], decoded.userId]
+      )
+      if (result.length === 0) {
+        return jsonResponse(404, { message: 'Review not found' })
+      }
+
+      await logUserAction(decoded.userId, 'review_deletion', `Deleted review ID: ${reviewMatch[1]}`)
+      return jsonResponse(200, { message: 'Review deleted' })
+    }
+
+    if (path === '/admin/users' && method === 'GET') {
+      const { error, decoded } = await requireAdmin(event)
+      if (error) return error
 
       const result = await query('SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC')
       return jsonResponse(200, result)
     }
 
+    const adminUserMatch = path.match(/^\/admin\/users\/([^/]+)$/)
+    if (adminUserMatch && method === 'PUT') {
+      const { error } = await requireAdmin(event)
+      if (error) return error
+
+      const { role } = body
+      const result = await query('UPDATE users SET role = $1 WHERE id = $2 RETURNING id, name, email, role', [role, adminUserMatch[1]])
+      return jsonResponse(200, result[0])
+    }
+
     if (path === '/admin/actions' && method === 'GET') {
-      const auth = event.headers.authorization
-      if (!auth || !auth.startsWith('Bearer ')) {
-        return jsonResponse(401, { message: 'Unauthorized' })
-      }
-      const token = auth.split(' ')[1]
-      const decoded = jwt.verify(token, JWT_SECRET)
-      const admin = await query('SELECT role FROM users WHERE id = $1', [decoded.userId])
-      if (admin.length === 0 || admin[0].role !== 'admin') {
-        return jsonResponse(403, { message: 'Admin access required' })
-      }
+      const { error } = await requireAdmin(event)
+      if (error) return error
 
       const result = await query(`
         SELECT ua.*, u.name as user_name
@@ -189,16 +272,8 @@ export const handler = async (event) => {
     }
 
     if (path === '/admin/reviews' && method === 'GET') {
-      const auth = event.headers.authorization
-      if (!auth || !auth.startsWith('Bearer ')) {
-        return jsonResponse(401, { message: 'Unauthorized' })
-      }
-      const token = auth.split(' ')[1]
-      const decoded = jwt.verify(token, JWT_SECRET)
-      const admin = await query('SELECT role FROM users WHERE id = $1', [decoded.userId])
-      if (admin.length === 0 || admin[0].role !== 'admin') {
-        return jsonResponse(403, { message: 'Admin access required' })
-      }
+      const { error } = await requireAdmin(event)
+      if (error) return error
 
       const result = await query(`
         SELECT r.*, u.name as user_name, d.name as destination_name
@@ -208,6 +283,20 @@ export const handler = async (event) => {
         ORDER BY r.created_at DESC
       `)
       return jsonResponse(200, result)
+    }
+
+    const adminReviewMatch = path.match(/^\/admin\/reviews\/([^/]+)$/)
+    if (adminReviewMatch && method === 'PUT') {
+      const { error, decoded } = await requireAdmin(event)
+      if (error) return error
+
+      const { status } = body
+      const result = await query('UPDATE reviews SET status = $1 WHERE id = $2 RETURNING *', [status, adminReviewMatch[1]])
+
+      if (result.length > 0) {
+        await logUserAction(decoded.userId, `review_${status}`, `${status.charAt(0).toUpperCase() + status.slice(1)} review ID: ${adminReviewMatch[1]}`)
+      }
+      return jsonResponse(200, result[0])
     }
 
     return jsonResponse(404, { message: 'Not Found' })

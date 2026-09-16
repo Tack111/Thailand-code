@@ -18,6 +18,11 @@
   --color-amber-400: #fbbf24;
   --color-amber-500: #f59e0b;
   --color-amber-600: #d97706;
+  --color-dark-blue: #1e3a5f;
+  --color-brown: #8b5a2b;
+  --color-light-brown: #a35e31;
+  --color-light-blue: #93c5fd;
+  --color-cream: #f5e9da;
 }
 
 body {

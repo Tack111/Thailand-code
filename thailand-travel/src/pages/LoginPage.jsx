@@ -19,7 +19,7 @@ export default function LoginPage() {
 
     try {
       const data = await loginApi(email, password)
-      login(data.user)
+      login(data.user, data.token)
       navigate('/dashboard')
     } catch (err) {
       setError(err.message)

@@ -4,10 +4,12 @@ const API_BASE = isProduction ? '/.netlify/functions/api' : ''
 async function request(path, options = {}) {
   const endpoint = isProduction ? path : `/api${path}`
   const url = `${API_BASE}${endpoint}`
+  const token = localStorage.getItem('token')
   const response = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...options.headers,
     },
   })

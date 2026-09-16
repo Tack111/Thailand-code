@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
-import { getDestinationReviews, createReview, updateReview, deleteReview } from '../services/reviews'
 import { getDestinations } from '../services/destinations'
+import { getUserReviews, createReview, updateReview, deleteReview } from '../services/reviews'
 
 export default function UserDashboard() {
   const { user } = useAuth()
@@ -18,7 +18,7 @@ export default function UserDashboard() {
       try {
         const [destData, reviewsData] = await Promise.all([
           getDestinations(),
-          getDestinationReviews(user?.id),
+          getUserReviews(user?.id),
         ])
         setDestinations(destData)
         setReviews(reviewsData)
