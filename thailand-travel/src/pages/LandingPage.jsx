@@ -200,23 +200,30 @@ export default function LandingPage() {
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
                 >
-                  <Link to={`/places/${place.id}`} className="group block">
-                    <div className="relative overflow-hidden rounded-xl">
-                      <div className="aspect-square overflow-hidden">
-                        <img
-                          src={place.image_url || '/images/hero.jpg'}
-                          alt={place.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <span className="text-xs text-emerald-300 font-medium">Trending</span>
-                        <h3 className="text-lg font-bold text-white">{place.name}</h3>
-                        <p className="text-gray-300 text-sm">{place.location}</p>
-                      </div>
-                    </div>
-                  </Link>
+                   <Link to={`/places/${place.id}`} className="group block">
+                     <div className="relative overflow-hidden rounded-xl">
+                       <div className="aspect-square overflow-hidden">
+                         <img
+                           src={place.image_url || '/images/hero.jpg'}
+                           alt={place.name}
+                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                         />
+                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                       </div>
+                       {place.price_range && (
+                         <div className="absolute top-3 right-3">
+                           <span className="px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-semibold text-gray-800">
+                             {place.price_range}
+                           </span>
+                         </div>
+                       )}
+                       <div className="absolute bottom-0 left-0 right-0 p-4">
+                         <span className="text-xs text-emerald-300 font-medium">Trending</span>
+                         <h3 className="text-lg font-bold text-white">{place.name}</h3>
+                         <p className="text-gray-300 text-sm">{place.location}</p>
+                       </div>
+                     </div>
+                   </Link>
                 </motion.div>
               ))}
             </div>
